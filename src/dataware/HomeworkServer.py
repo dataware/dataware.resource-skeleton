@@ -868,13 +868,9 @@ if __name__ == '__main__' :
     #LOCAL
     ch = logging.StreamHandler(sys.stdout)
     
-    #ch = logging.handlers.TimedRotatingFileHandler( 
-    #    filename='logs/prefstore.log',
-    #    when='midnight', 
-    #    interval=21 )
     
     fh = logging.handlers.TimedRotatingFileHandler( 
-        filename='logs/prefstore_data.log',
+        filename='/var/log/dataware_resource.log',
         when='midnight', 
         interval=21 )
         

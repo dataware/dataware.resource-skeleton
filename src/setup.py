@@ -15,7 +15,8 @@ setup(
     install_requires=[
 	"bottle",
 	"MYSQL-python",
-	"gevent"
+	"gevent",
+	"sqlparse"
     ]
 )
 

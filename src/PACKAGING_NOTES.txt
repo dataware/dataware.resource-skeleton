@@ -674,11 +674,12 @@ ls:
 
 DEBIAN/ usr/
 
-sudo mkdir /etc
+sudo mkdir etc
+sudo mkdir etc/dataware
 
-cd etc
+cd etc/dataware
 
-sudo cp  ~/dataware.hwresource/src/dataware/config_* ./
+sudo cp  ~/dataware.hwresource/src/dataware/config_* ./ 
 
 cd ../usr
 
@@ -686,10 +687,10 @@ sudo mkdir bin
 
 cd bin
 
-vi dataware
+sudo vi dataware-resource
 
 #!/bin/sh
-python /usr/share/pyshared/dataware/HomeworkServer.py $1
+sudo python /usr/share/pyshared/dataware/HomeworkServer.py $1
 
 sudo chmod a+x dataware
 
