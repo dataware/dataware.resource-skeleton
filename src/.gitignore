@@ -1,0 +1,4 @@
+dataware_resource.egg-info/
+deb_dist/
+dataware/venv/
+*.py[cod]
