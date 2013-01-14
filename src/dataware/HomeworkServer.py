@@ -778,15 +778,16 @@ def home( ):
    
     
     browsing = resourcedb.fetch_url_count()
+    print browsing
     urls=[]
-    
-    multiplier = 50 / float(browsing[0]['requests']);
+    if browsing: 
+        multiplier = 50 / float(browsing[0]['requests']);
      
-    for row in browsing:
+    	for row in browsing:
         
-        link = "javascript:wordclicked({'url': '%s', 'macaddrs':'%s', 'ipdaddrs':'%s' , 'requests' :%d})" % (row['url'],row['macaddrs'],row['ipaddrs'],row['requests'])
+        	link = "javascript:wordclicked({'url': '%s', 'macaddrs':'%s', 'ipdaddrs':'%s' , 'requests' :%d})" % (row['url'],row['macaddrs'],row['ipaddrs'],row['requests'])
         
-        urls.append({'text': row['url'], 'weight':int(float(row['requests']) * multiplier), 'link': link, 'html': {'title': "url browsed"}})
+        	urls.append({'text': row['url'], 'weight':int(float(row['requests']) * multiplier), 'link': link, 'html': {'title': "url browsed"}})
      
     return template( 'home_page_template', user=user, summary=summary, urls=urls, installs=installs);
     
@@ -873,7 +874,7 @@ if __name__ == '__main__' :
     
     
     fh = logging.handlers.TimedRotatingFileHandler( 
-        filename='/var/log/dataware_resource.log',
+        filename='logs/dataware_resource.log',
         when='midnight', 
         interval=21 )
         
