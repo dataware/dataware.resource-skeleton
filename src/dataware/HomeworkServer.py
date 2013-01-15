@@ -874,7 +874,7 @@ if __name__ == '__main__' :
     
     
     fh = logging.handlers.TimedRotatingFileHandler( 
-        filename='logs/dataware_resource.log',
+        filename='/var/log/dataware_resource.log',
         when='midnight', 
         interval=21 )
         
