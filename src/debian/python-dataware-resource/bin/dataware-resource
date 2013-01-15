@@ -1,0 +1,3 @@
+#!/bin/sh
+cd /usr/share/pyshared/dataware
+sudo python HomeworkServer.py $1

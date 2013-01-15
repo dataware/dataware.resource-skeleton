@@ -1,5 +1,4 @@
-include *.txt
-recursive-include dataware *.cfg *.py
-recursive-include dataware/logs *.log
+include *
+recursive-include dataware *.py *.so 
 recursive-include dataware/views *.tpl
 recursive-include dataware/static * 

@@ -1,0 +1,5 @@
+python:Versions=2.6
+python:Provides=python2.6-dataware-resource
+python:Depends=python (<< 2.7), python (>= 2.6), python-support (>= 0.90.0)
+shlibs:Depends=libc6 (>= 2.2.5), libevent-1.4-2 (>= 1.4.13-stable), libmysqlclient16 (>= 5.1.21-1)
+misc:Depends=
