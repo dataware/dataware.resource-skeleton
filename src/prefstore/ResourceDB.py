@@ -207,6 +207,18 @@ class ResourceDB(object):
             return None
 
     @safety_mysql
+    def fetch_tables(self):
+        query = """
+                    SELECT table_name FROM information_schema.tables 
+                    WHERE table_type = 'BASE TABLE' AND table_schema = '%s'
+                    ORDER BY 1 ASC
+        """ % (self.DB_NAME)
+        self.cursor.execute( query )                    
+      
+        tables = [ row[ "table_name" ].lower() for row in self.cursor.fetchall() ]
+        return tables
+        
+    @safety_mysql
     def fetch_schema(self, table):
         query = """
                             SELECT column_name, data_type, is_nullable, character_maximum_length, numeric_precision 

@@ -130,11 +130,20 @@ def format_failure( cause, error, ):
 #///////////////////////////////////////////////
   
 
+@route( '/tables', method = "GET",)
+def tables():
+    tables = resourcedb.fetch_tables()  
+    return json.dumps({"tables":tables})
     
 @route( '/schema', method = "GET", )
 def schema():
     subdomain = request.urlparts.netloc.split('.')[0]
     schema = resourcedb.fetch_schema(subdomain)
+    return json.dumps({"schema":schema})
+
+@route( '/schema/<table>', method = "GET", )
+def schema(table):
+    schema = resourcedb.fetch_schema(table)
     return json.dumps({"schema":schema})
     
 @route( '/install', method = "GET", )

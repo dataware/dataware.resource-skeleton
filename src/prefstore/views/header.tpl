@@ -2,16 +2,28 @@
 <head>
 <title>My dataware resources</title>
 
-<link rel="stylesheet" type="text/css" href="./static/bootstrap/css/bootstrap.min.css" /> 
 <link rel="stylesheet" type="text/css" href="./static/jqcloud.css" />
+<link rel="stylesheet" type="text/css" href="./static/bootstrap/css/bootstrap.css" /> 
+<link rel="stylesheet" type="text/css" href="./static/bootstrap-wizard/src/bootstrap-wizard.css" />
+<link rel="stylesheet" type="text/css" href="./static/bootstrap-notify/css/bootstrap-notify.css" />
+
+
 <script type="text/javascript" src="./static/jquery/jquery-1.8.2.min.js"></script>
 <script type="text/javascript" src="./static/jquery/jquery-ui-1.8.23.min.js"></script>
 <script type="text/javascript" src="./static/knockout/knockout-2.1.0.js"></script>
 <script type="text/javascript" src="./static/knockout/knockout-postbox.min.js"></script>
 <script type="text/javascript" src="./static/knockout/knockout-mapping.js"></script>
 <script type="text/javascript" src="./static/bootstrap/js/bootstrap.min.js"></script>
-<script type="text/javascript" src="./static/bootstrap/js/bootstrap-notify.js"></script>
+<script type="text/javascript" src="./static/bootstrap-notify/js/bootstrap-notify.js"></script>
+<script type="text/javascript" src="./static/bootstrap-wizard/src/bootstrap-wizard.js"></script>
 <script type="text/javascript" src="http://www.google.com/jsapi"></script>
+
+
+<style>
+    input[type="text"]{
+        height: 30px;
+    }
+</style>
 
 
 <script>
@@ -82,15 +94,117 @@
 
 <script>
 
+ function ResourceDialogModel(){
+    var self = this;
+    
+    this.currentEntity = ko.observable();
+    this.entities = ko.observableArray(["","router", "something else"]);
+    
+    this.sources = ko.observableArray([]);
+    this.currentSource = ko.observable();
+    
+    this.schema = ko.observableArray([]);
+    this.selectedColumns = ko.observableArray([]);
+    
+    this.chartTypes = ko.observableArray(["", "bar chart", "table"]);
+    this.currentType = ko.observable();
+    
+    
+    this.fetchSources= function(){
+       
+        $.ajax({
+                url: "/tables",
+                dataType: 'json', 
+            
+                success: function(data) {
+                    console.log(data.tables);
+                    self.sources(data.tables);
+                    console.log(self.sources());
+                }
+        });
+    }
+    
+    /*
+     * The checked binding only works with strings, so this builds an array of the
+     * full objects (rather than just column_name) that were selected.
+     */
+    this.selectedObjects = ko.computed(function(){
+        return ko.utils.arrayMap(self.selectedColumns(), function(id){
+            return ko.utils.arrayFirst(self.schema(), function(item){
+                return item.column_name == id;
+            });
+        });
+    });
+    
+    this.selectedObjects.subscribe(function(data){
+        console.log(ko.utils.arrayMap(this.selectedObjects(), function(item){
+            return item.data_type;
+        })
+        );
+    },this);
+    
+    this.fetchSchema = function(table){
+    
+         console.log("fetching schema for " + table);
+    
+         $.ajax({
+                url: "/schema/" + table,
+                dataType: 'json', 
+            
+                success: function(data) {
+                    console.log(data.schema);
+                    self.schema(data.schema);
+                }
+        });
+    
+    }
+    
+    this.selectedColumns.subscribe(function(option){
+        console.log(this.selectedColumns());
+    }, this);
+    
+    this.currentSource.subscribe(function(option){
+        this.fetchSchema(option);
+    },this);
+    
+    this.currentEntity.subscribe(function(option){
+        if (option == "router"){
+            console.log("FETCHING SOURCES");
+            this.fetchSources();
+        }else{
+            this.sources([]);
+        }
+    }, this);
+ 
+ }
+ 
  function ResourceModel(){
         
         var self = this;
         
+        var options = {};
+        
+    
         this.selectedResource = ko.observable("");
+        this.dialogModel = new ResourceDialogModel();
+       
+       
         
         this.resources = ko.observableArray([]);
         
         this.event = ko.observable().subscribeTo("myevents", true);
+        
+        this.wizard =  $("#some-wizard").wizard(options);
+        
+        this.resourceDialog = function(){
+           self.wizard.show();
+           ko.applyBindings(self.dialogModel, $(".wizard-modal")[0]);
+        }
+        
+        this.amActive = function(resourcename){
+            console.log("Checking " + resourcename + " againsts " + self.selectedResource().resource_name());
+            return resourcename == self.selectedResource().resource_name();
+        }
         
         this.loadResources = function(data){
             
@@ -108,6 +222,10 @@
             console.log("resources are..");
             console.log(self.resources());
         };
+        
+       
+        
+        
         
         this.selectedResource.subscribe(function(resource){
             console.log(resource.resource_name());
@@ -180,7 +298,7 @@
 
 <script>
 
-	PREFSTORE = "http://hwresource.block49.net:9000/" 
+	//PREFSTORE = "http://hwresource.block49.net:9000/" 
 	 
 	$( document ).ready( function() {
 		$( 'a.menu_button' ).click( function() {
