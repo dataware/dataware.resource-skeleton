@@ -77,7 +77,12 @@ $(function(){
                 </div>
                 
                 <div class="wizard-card" data-cardname="card3">
-                    <h3>Filter</h3>
+                    <h3>Constraints</h3>
+                    
+                    <label>Query record limit</label>
+                    <input type="text" placeholder="A number">
+                    <span class="help-block">The maximum number of records that can be retrieved in a single query</span>
+                    
                     <table class="table table-striped table-bordered">
                         <thead>
                             <tr>
@@ -111,8 +116,40 @@ $(function(){
                 <div class="wizard-card" data-cardname="card5">
                     <h3>Visualise it</h3>
                     <label>Choose visualization type</label>
-                    <select data-bind="options:chartTypes, value:currentType"></select>
-                    
+                        
+                        <div class="row">
+                            <div class="span6" data-bind="foreach: eligibleCharts">
+                                <span class="badge badge-info" data-bind="text:$data, click:function(){$parent.currentType($data)}"></span>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row" data-bind=visible:selectAxes>
+                            <div class="span2">
+                                <label> x axis </label>
+                                <select class="span2" data-bind="options:selectedColumns, value:x"></select>
+                            </div>    
+                            <div class="span2">
+                                <label> y axis </label>
+                                <select class="span2" data-bind="options:selectedColumns, value:y"></select>
+                            </div>
+                            <div class="span2">
+                                <label> refresh rate </label>
+                                <select class="span2" data-bind="options:refreshOptions, value:refreshOption"></select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="span1" style="margin-top:40px">
+                                <button class="btn btn-primary btn-small pull-right">^</button>
+                            </div>
+                            <div class="span4">
+                                <div class="chart"></div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="span4 offset1" style="text-align:center; margin-top:8px;">
+                                 <button class="btn btn-primary btn-small">></button>
+                            </div>
+                        </div>
                 </div>
             </div>
         

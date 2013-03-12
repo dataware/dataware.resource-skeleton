@@ -10,6 +10,8 @@ import logging
 import base64
 import random
 import time
+import datetime
+import random
 
 log = logging.getLogger( "console_log" )
 
@@ -247,4 +249,40 @@ class ResourceDB(object):
             return row
         else :
             return None
-
+    
+    @safety_mysql
+    def fetch_data(self, table, columns, limit=100):
+        
+        query = """
+            SELECT %s FROM %s.%s LIMIT %d
+        """ % (columns, self.DB_NAME, table, limit)
+        
+        self.cursor.execute( query )
+        row = self.cursor.fetchall()
+       
+        if not row is None:
+            return row
+        else :
+            return None
+            
+        
+    @safety_mysql
+    def create_test_data(self):
+    
+        random.seed(time.time())
+    
+        #start a week ago
+        sensorids     = [1, 2] 
+        tsnow         = time.time()
+        tsthen        = time.time() - (7*24*60*60)
+        
+        for sensorid in sensorids:
+            tstamp = tsthen
+            while tstamp < tsnow:
+                query = """
+                    INSERT INTO %s.%s (ts,sensorid,watts) VALUES ('%s', %d, %f)
+                 """  % ( self.DB_NAME, self.TBL_TERM_POWER, datetime.datetime.fromtimestamp(tstamp).strftime('%a %b %d %H:%M:%S %Y'), sensorid,random.random() * 2000)
+                print query
+                self.cursor.execute( query ) 
+                tstamp += (30 * 60)
+            

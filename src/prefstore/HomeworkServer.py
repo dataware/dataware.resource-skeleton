@@ -548,7 +548,36 @@ def logout():
     
     delete_authentication_cookie()
     redirect( ROOT_PAGE )
+
+
+@route('/fetch_data', method = "POST")
+def fetch_data():
+    try:
+        user = check_login()
+        if ( not user ): redirect( ROOT_PAGE )
+    except RegisterException, e:
+        redirect( "/register" )
+    except LoginException, e:
+        return error( e.msg )
+    except Exception, e:
+        return error( e ) 
+
+    table   = request.forms.get('table')
+    columns = request.forms.get('columns')
+    limit   = request.forms.get('limit')
     
+    data = resourcedb.fetch_data(table, columns, int(limit))
+    return json.dumps(data)
+    
+    
+@route('/createtestdata')
+def createtestdata():
+    data = resourcedb.fetch_data('energy', "ts,sensorid", 100)
+    return json.dumps(data)
+    #resourcedb.create_test_data()
+    return json.dumps({ 
+            'success':True,        
+    })            
         
 #///////////////////////////////////////////////
  

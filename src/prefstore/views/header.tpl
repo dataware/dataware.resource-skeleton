@@ -2,7 +2,7 @@
 <head>
 <title>My dataware resources</title>
 
-<link rel="stylesheet" type="text/css" href="./static/jqcloud.css" />
+<!--<link rel="stylesheet" type="text/css" href="./static/jqcloud.css" />-->
 <link rel="stylesheet" type="text/css" href="./static/bootstrap/css/bootstrap.css" /> 
 <link rel="stylesheet" type="text/css" href="./static/bootstrap-wizard/src/bootstrap-wizard.css" />
 <link rel="stylesheet" type="text/css" href="./static/bootstrap-notify/css/bootstrap-notify.css" />
@@ -17,11 +17,15 @@
 <script type="text/javascript" src="./static/bootstrap-notify/js/bootstrap-notify.js"></script>
 <script type="text/javascript" src="./static/bootstrap-wizard/src/bootstrap-wizard.js"></script>
 <script type="text/javascript" src="http://www.google.com/jsapi"></script>
+<script type="text/javascript" src="./static/d3/d3.min.js"></script>
 
 
 <style>
     input[type="text"]{
         height: 30px;
+    }
+    .chart{
+        margin-top: 20px;
     }
 </style>
 
@@ -94,6 +98,26 @@
 
 <script>
 
+
+ /*function barchart(params){
+    
+    var that = {};
+    
+    var x = "hello"; //private
+    
+    var y = "goodbye"; //pivate
+    
+    that.x = function(){
+      return x;
+    }
+      
+    that.y = function(){
+      return y;
+    } 
+        
+    return that; 
+ }*/
+ 
  function ResourceDialogModel(){
     var self = this;
     
@@ -105,10 +129,34 @@
     
     this.schema = ko.observableArray([]);
     this.selectedColumns = ko.observableArray([]);
+
+    this.numericTypes = ["float", "int", "long"];    
+    this.chartTypes   =  ["bar chart", "table", "scatter plot"];
     
-    this.chartTypes = ko.observableArray(["", "bar chart", "table"]);
     this.currentType = ko.observable();
     
+    this.data         = ko.observableArray([]); 
+    this.x            = ko.observable();
+    this.y            = ko.observable();
+    
+    this.selectAxes   = ko.observable(false);
+    this.selectedAxes = ko.observableArray([]);
+    this.orderAxis    = ko.observable();
+    
+    this.orders       = ko.observableArray(["asc", "desc"]);
+    this.order        = ko.observable("asc");
+    
+    this.refreshOptions = ko.observableArray(["no refresh", "every 5 seconds", "every 30 seconds", "every minute", "every 5 minutes", "hourly", "6 hourly", "daily"]);
+    
+    this.refreshOption  = ko.observable(this.refreshOptions()[0]);
+    
+    this.eligibility  = { 
+                            "bar chart" : [{"type":"numeric", "count":1}, {"type":"*", "count":1}], 
+                            "table"     : [{"type":"*", "count":1}], 
+                            "scatter plot" :[{"type":"numeric", "count":2}]
+                        }
+    
+    this.eligibleCharts = ko.observableArray([]);
     
     this.fetchSources= function(){
        
@@ -145,8 +193,6 @@
     
     this.fetchSchema = function(table){
     
-         console.log("fetching schema for " + table);
-    
          $.ajax({
                 url: "/schema/" + table,
                 dataType: 'json', 
@@ -159,12 +205,39 @@
     
     }
     
+    this.checkEligibility = function(){
+        this.eligibleCharts(ko.utils.arrayMap(self.chartTypes, function(item){
+            if (self.amEligible(item))
+                return item;
+        }));
+    }
+    
+    this.amEligible = function(chart){
+        types = self.eligibility[chart];
+        
+        eligible = true;
+        
+        if (types == undefined){
+            return false;
+        }
+        
+        $.each(types, function(i, type){
+            //create own deals!
+        });
+        
+        console.log(types); 
+        return true;
+    }
+    
     this.selectedColumns.subscribe(function(option){
-        console.log(this.selectedColumns());
+        //console.log(this.selectedColumns());
+        this.eligibleCharts([]);
+        this.checkEligibility(); 
     }, this);
     
     this.currentSource.subscribe(function(option){
         this.fetchSchema(option);
+        this.selectedColumns([]);
     },this);
     
     this.currentEntity.subscribe(function(option){
@@ -176,6 +249,142 @@
         }
     }, this);
  
+    this.currentType.subscribe(function(type){
+        this.selectAxes(true);
+        this.fetchdata(type);
+    }, this);
+    
+    
+    this.x.subscribe(function(type){
+        if (this.data && this.data().length > 0){
+            this.selectedAxes([this.x(), this.y()]);
+            this.buildchart();
+        }
+    }, this);
+    
+    
+    this.y.subscribe(function(type){
+        if (this.data && this.data().length > 0){
+            this.selectedAxes([this.x(), this.y()]);
+            this.buildchart();
+        }
+    }, this);
+    
+    this.fetchdata = function(type){
+        $.ajax({
+                url: '/fetch_data',
+                contentType: 'application/x-www-form-urlencoded',
+                type: "POST",
+                data: {
+                    'table'     : this.currentSource(),
+                    'columns'   : this.selectedColumns().join(),
+                    'limit'     : 20
+                },
+                dataType: 'json',
+                success: function(data){
+                    console.log("success!!");
+                    self.data(data);    
+                },
+                error: function(XMLHttpRequest, textStatus, errorThrown){
+                    if (error_callback){
+                         error_callback(XMLHttpRequest, textStatus, errorThrown);
+                    }       
+                }
+        });
+    },
+    
+    this.schemaType = function(column){
+        attr = ko.utils.arrayFirst(self.schema(), function(item){
+            return item.column_name == column;    
+        });
+        
+        if (attr){
+            if (ko.utils.arrayFirst(self.numericTypes, function(item){return item==attr.data_type}))
+                return "numeric"
+            return attr.data_type
+        }
+        return undefined;
+    },
+    
+    this.buildchart = function(){
+      
+        $('.chart').empty();
+        
+        var xdata = ko.utils.arrayMap(this.data(), function(item){
+            return item[self.x()];
+        },this); 
+        
+        var ydata = ko.utils.arrayMap(this.data(), function(item){
+            return item[self.y()];
+        },this); 
+        
+        var numericData, labelData, orientation;
+        
+        if (this.schemaType(this.x()) == "numeric"){
+            numericData = xdata;  
+            labelData = ydata;      
+            orientation = 1;
+        }
+        else if (this.schemaType(this.y()) == "numeric"){
+            numericData = ydata;
+            labelData = xdata;
+            orientation = 0;
+        }
+        else{
+            return;
+        }
+      
+        var width   = 300;
+        var padding = 8;
+        var height = orientation == 1 ? 100 : 300;
+        
+        var root = d3.select('.chart')
+            .append('svg')
+            .attr({
+                'width': width,
+                'height' : height ,
+            })
+            .style('border', '1px solid black')
+            .style('padding', '8px');
+            
+            
+      
+        var maxDataValue = d3.max(numericData);
+        
+        var scale = d3.scale.linear().domain([0,maxDataValue]).range([0, orientation == 1 ? (height-padding) : (width-padding)]);
+        
+        var barWidth = orientation == 1 ? (width - (2*padding)) / numericData.length : (height-(2*padding)) / numericData.length;
+        
+        var barY = function(datum, index){
+            if (orientation == 1)
+                return  height - scale(datum);
+            else
+                return padding + (index * barWidth); 
+        }
+        
+        var barX = function(datum, index){
+            if (orientation == 1)
+                return (index * barWidth);
+            else
+                return 0;
+        };
+        
+        var w = orientation  == 1 ? barWidth : function(d){return scale(d)};
+        var h = orientation == 1 ? function(d){return scale(d)} : barWidth;
+        
+        root.selectAll('rect.number')
+            .data(numericData).enter()
+            .append('rect')
+            .attr({
+                'class':'number',
+                'x': barX,
+                'y': barY,
+                'width' : w,
+                'height' : h,
+                'fill' : '#dff',
+                'stroke' : '#444',
+            });
+    }
  }
  
  function ResourceModel(){
@@ -202,7 +411,6 @@
         }
         
         this.amActive = function(resourcename){
-            console.log("Checking " + resourcename + " againsts " + self.selectedResource().resource_name());
             return resourcename == self.selectedResource().resource_name();
         }
         
