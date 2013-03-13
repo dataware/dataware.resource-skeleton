@@ -565,8 +565,11 @@ def fetch_data():
     table   = request.forms.get('table')
     columns = request.forms.get('columns')
     limit   = request.forms.get('limit')
+    orderby = request.forms.get('orderby') 
+    order   = request.forms.get('order') 
     
-    data = resourcedb.fetch_data(table, columns, int(limit))
+    data = resourcedb.fetch_data(table, columns, int(limit), orderby, order)
+      
     return json.dumps(data)
     
     

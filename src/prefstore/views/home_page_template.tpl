@@ -123,7 +123,7 @@ $(function(){
                             </div>
                         </div>
                         <hr>
-                        <div class="row" data-bind=visible:selectAxes>
+                        <div class="row" data-bind="visible:selectAxes">
                             <div class="span2">
                                 <label> x axis </label>
                                 <select class="span2" data-bind="options:selectedColumns, value:x"></select>
@@ -137,17 +137,17 @@ $(function(){
                                 <select class="span2" data-bind="options:refreshOptions, value:refreshOption"></select>
                             </div>
                         </div>
-                        <div class="row">
-                            <div class="span1" style="margin-top:40px">
-                                <button class="btn btn-primary btn-small pull-right">^</button>
+                        <div class="row" data-bind="visible:chartVisible">
+                            <div class="span1" data-bind="attr:{style:barchart().topmargin}">
+                                <button class="btn btn-info btn-mini pull-right"  data-bind="click:sorty"> <i class="icon-white icon-arrow-up"></i></button>
                             </div>
                             <div class="span4">
                                 <div class="chart"></div>
                             </div>
                         </div>
-                        <div class="row">
+                        <div class="row" data-bind="visible:chartVisible">
                             <div class="span4 offset1" style="text-align:center; margin-top:8px;">
-                                 <button class="btn btn-primary btn-small">></button>
+                                 <button class="btn btn-info btn-mini" data-bind="click:sortx"><i class="icon-white icon-arrow-right"></i></button>
                             </div>
                         </div>
                 </div>

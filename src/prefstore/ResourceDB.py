@@ -251,12 +251,17 @@ class ResourceDB(object):
             return None
     
     @safety_mysql
-    def fetch_data(self, table, columns, limit=100):
+    def fetch_data(self, table, columns, limit=100, orderby=None, order=None):
+        ordersql = ""
         
+        if orderby and order:
+            ordersql = "ORDER BY %s %s" % (orderby, order)
+            
         query = """
-            SELECT %s FROM %s.%s LIMIT %d
-        """ % (columns, self.DB_NAME, table, limit)
+            SELECT %s FROM %s.%s %s LIMIT %d
+        """ % (columns, self.DB_NAME, table, ordersql, limit)
         
+        print "query is %s " % query
         self.cursor.execute( query )
         row = self.cursor.fetchall()
        

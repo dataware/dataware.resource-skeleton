@@ -99,24 +99,106 @@
 <script>
 
 
- /*function barchart(params){
-    
-    var that = {};
-    
-    var x = "hello"; //private
-    
-    var y = "goodbye"; //pivate
-    
-    that.x = function(){
-      return x;
-    }
-      
-    that.y = function(){
-      return y;
-    } 
+ function barchart(){
+ 
+        var that = {};
         
-    return that; 
- }*/
+        var numericData, labelData, orientation;
+        
+        var width, padding, height;
+        
+        that.visible   = ko.observable(false);
+        
+        that.topmargin = ko.observable("margin-top: 0px");
+        
+        that.render = function(options){
+                
+            $('.chart').empty();
+            that.visible(false);
+                   
+            var xdata = ko.utils.arrayMap(options.data, function(item){
+                return item[options.x];
+            }); 
+        
+            var ydata = ko.utils.arrayMap(options.data, function(item){
+                return item[options.y];
+            }); 
+        
+            if (options.xtype == "numeric"){
+                numericData = xdata;  
+                labelData = ydata;      
+                orientation = 0;
+                that.visible(true);
+            }
+            else if (options.ytype == "numeric"){
+                numericData = ydata;
+                labelData = xdata;
+                orientation = 1;
+                that.visible(true);
+            }
+            else{
+                that.visible(false);
+                return;
+            }
+      
+            width   = 280;
+            padding = 8;
+            height = orientation == 1 ? 100 : 300;
+      
+            that.topmargin("margin-top: " + (height/2 + 15) + "px");  
+            
+            
+            var maxDataValue = d3.max(numericData);
+        
+            var scale = d3.scale.linear()
+                        .domain([0,maxDataValue])
+                        .range([0, orientation == 1 ? (height-padding) : (width-padding)]);
+        
+            var barWidth = orientation == 1 ? (width - (2*padding)) / numericData.length 
+                                            : (height-(2*padding)) / numericData.length;
+        
+            var barY = function(datum, index){
+                if (orientation == 1)
+                    return height - scale(datum);
+                else
+                    return padding + (index * barWidth); 
+            };
+        
+            var barX = function(datum, index){
+                if (orientation == 1)
+                    return padding + (index * barWidth);
+                else
+                    return padding;
+            };
+        
+            var w = orientation  == 1 ? barWidth : function(d){return scale(d)};
+            var h = orientation == 1 ? function(d){return scale(d)} : barWidth;
+        
+            var root = d3.select('.chart')
+                    .append('svg')
+                    .attr({
+                        'width': width,
+                        'height' : height ,
+                     })
+                    .style('border', '1px solid black')
+                    .style('padding', '8px');
+                    
+            root.selectAll('rect.number')
+                .data(numericData).enter()
+                .append('rect')
+                .attr({
+                    'class':'number',
+                    'x': barX,
+                    'y': barY,
+                    'width' : w,
+                    'height' : h,
+                    'fill' : '#dff',
+                    'stroke' : '#444',
+                });
+        }
+        return that;
+ }
+ 
  
  function ResourceDialogModel(){
     var self = this;
@@ -138,15 +220,30 @@
     this.data         = ko.observableArray([]); 
     this.x            = ko.observable();
     this.y            = ko.observable();
+    this.barchart     = ko.observable(barchart());
     
     this.selectAxes   = ko.observable(false);
     this.selectedAxes = ko.observableArray([]);
     this.orderAxis    = ko.observable();
     
     this.orders       = ko.observableArray(["asc", "desc"]);
-    this.order        = ko.observable("asc");
     
-    this.refreshOptions = ko.observableArray(["no refresh", "every 5 seconds", "every 30 seconds", "every minute", "every 5 minutes", "hourly", "6 hourly", "daily"]);
+    this.order        = ko.observable("asc");
+  
+    this.orderby      = ko.observable(1);
+    
+    this.chartVisible = ko.observable(false);
+    
+    
+    this.refreshOptions = ko.observableArray([  "no refresh",
+                                                "every 5 seconds",
+                                                "every 30 seconds",
+                                                "every minute", 
+                                                "every 5 minutes",
+                                                "hourly", 
+                                                "6 hourly", 
+                                                "daily"
+                                            ]);
     
     this.refreshOption  = ko.observable(this.refreshOptions()[0]);
     
@@ -233,6 +330,7 @@
         //console.log(this.selectedColumns());
         this.eligibleCharts([]);
         this.checkEligibility(); 
+        this.orderby(this.selectedColumns()[0]);
     }, this);
     
     this.currentSource.subscribe(function(option){
@@ -251,7 +349,7 @@
  
     this.currentType.subscribe(function(type){
         this.selectAxes(true);
-        this.fetchdata(type);
+        this.fetchdata();
     }, this);
     
     
@@ -270,7 +368,9 @@
         }
     }, this);
     
-    this.fetchdata = function(type){
+    this.fetchdata = function(callback){
+        console.log("fetching data " + this.orderby() + " " + this.order());
+        
         $.ajax({
                 url: '/fetch_data',
                 contentType: 'application/x-www-form-urlencoded',
@@ -278,12 +378,21 @@
                 data: {
                     'table'     : this.currentSource(),
                     'columns'   : this.selectedColumns().join(),
-                    'limit'     : 20
+                    'limit'     : 20,
+                    'orderby'   : this.orderby(),
+                    'order'     : this.order(),
                 },
+                
+                
                 dataType: 'json',
+                
                 success: function(data){
-                    console.log("success!!");
-                    self.data(data);    
+                    self.data(data);   
+                    console.log("callback is")
+                    console.log(callback);
+                    if (callback){
+                        callback();
+                    }
                 },
                 error: function(XMLHttpRequest, textStatus, errorThrown){
                     if (error_callback){
@@ -306,85 +415,40 @@
         return undefined;
     },
     
-    this.buildchart = function(){
-      
-        $('.chart').empty();
-        
-        var xdata = ko.utils.arrayMap(this.data(), function(item){
-            return item[self.x()];
-        },this); 
-        
-        var ydata = ko.utils.arrayMap(this.data(), function(item){
-            return item[self.y()];
-        },this); 
-        
-        var numericData, labelData, orientation;
-        
-        if (this.schemaType(this.x()) == "numeric"){
-            numericData = xdata;  
-            labelData = ydata;      
-            orientation = 1;
-        }
-        else if (this.schemaType(this.y()) == "numeric"){
-            numericData = ydata;
-            labelData = xdata;
-            orientation = 0;
-        }
-        else{
-            return;
-        }
-      
-        var width   = 300;
-        var padding = 8;
-        var height = orientation == 1 ? 100 : 300;
-        
-        var root = d3.select('.chart')
-            .append('svg')
-            .attr({
-                'width': width,
-                'height' : height ,
-            })
-            .style('border', '1px solid black')
-            .style('padding', '8px');
-            
-            
-      
-        var maxDataValue = d3.max(numericData);
-        
-        var scale = d3.scale.linear().domain([0,maxDataValue]).range([0, orientation == 1 ? (height-padding) : (width-padding)]);
-        
-        var barWidth = orientation == 1 ? (width - (2*padding)) / numericData.length : (height-(2*padding)) / numericData.length;
-        
-        var barY = function(datum, index){
-            if (orientation == 1)
-                return  height - scale(datum);
-            else
-                return padding + (index * barWidth); 
-        }
-        
-        var barX = function(datum, index){
-            if (orientation == 1)
-                return (index * barWidth);
-            else
-                return 0;
-        };
-        
-        var w = orientation  == 1 ? barWidth : function(d){return scale(d)};
-        var h = orientation == 1 ? function(d){return scale(d)} : barWidth;
-        
-        root.selectAll('rect.number')
-            .data(numericData).enter()
-            .append('rect')
-            .attr({
-                'class':'number',
-                'x': barX,
-                'y': barY,
-                'width' : w,
-                'height' : h,
-                'fill' : '#dff',
-                'stroke' : '#444',
-            });
+  
+    
+    this.toggleOrder = function(){
+        if (this.order() == "asc")
+            this.order("desc");
+        else
+            this.order("asc");
     }
+    
+    this.buildchart = function(){
+        this.barchart().render({
+                                data:self.data(),
+                                x: self.x(),
+                                y: self.y(),
+                                xtype: self.schemaType(self.x()),
+                                ytype: self.schemaType(self.y())
+                            });  
+    }
+    
+    this.sortx = function(){
+        this.orderby(this.x());
+        this.fetchdata(this.buildchart);
+        this.toggleOrder();
+    },
+    
+    this.sorty = function(){
+        this.orderby(this.y());
+        this.fetchdata(this.buildchart);
+        this.toggleOrder();
+    },
+    
+    this.barchart().visible.subscribe(function(newValue){
+        this.chartVisible(newValue);
+    },this);
  }
  
  function ResourceModel(){
