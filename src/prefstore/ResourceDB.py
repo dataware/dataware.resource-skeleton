@@ -73,20 +73,22 @@ class ResourceDB(object):
                    
             ( self.TBL_TERM_URLS, """
                 CREATE TABLE %s.%s (
+                    id int NOT NULL AUTO_INCREMENT,
                     ts varchar(20), 
                     macaddr varchar(19), 
                     ipaddr varchar(16), 
                     url varchar(128),
-                    PRIMARY KEY (ts, macaddr, url)
+                    PRIMARY KEY (id)
                 ) DEFAULT CHARSET=latin1;
             """  % ( self.DB_NAME , self.TBL_TERM_URLS ) ),
            
             ( self.TBL_TERM_POWER, """ 
                 CREATE TABLE %s.%s (
+                    id int NOT NULL AUTO_INCREMENT,
                     ts varchar(20) NOT NULL,
                     sensorid int(11),
                     watts float,
-                    PRIMARY KEY (ts, sensorid)
+                    PRIMARY KEY (id)
                 ) DEFAULT CHARSET=latin1;
             """  % ( self.DB_NAME , self.TBL_TERM_POWER ) ),            
         ] 
@@ -251,6 +253,28 @@ class ResourceDB(object):
             return None
     
     @safety_mysql
+    def fetch_latest(self, table, columns, limit=100, key=None, latest=None):
+        clause = ""
+        
+        if key and latest:
+            clause = 'WHERE %s > %d' % (key,latest)
+        elif key:
+            clause = 'ORDER BY %s DESC' % key    
+        
+        query = """
+            SELECT %s FROM %s.%s %s LIMIT %d
+        """ % (columns, self.DB_NAME, table, clause, limit)
+        
+        print "query is %s " % query
+        self.cursor.execute( query )
+        row = self.cursor.fetchall()
+        
+        if not row is None:
+            return row
+        else :
+            return None
+ 
+    @safety_mysql
     def fetch_data(self, table, columns, limit=100, orderby=None, order=None):
         ordersql = ""
         
@@ -270,7 +294,19 @@ class ResourceDB(object):
         else :
             return None
             
+    @safety_mysql
+    def insert_test_record(self):
+        random.seed(time.time())
+        sensorid = random.randint(1,2) 
+        tsnow = time.time()
         
+       
+        query = """
+                    INSERT INTO %s.%s (ts,sensorid,watts) VALUES ('%s', %d, %2.f)
+                 """  % ( self.DB_NAME, self.TBL_TERM_POWER, datetime.datetime.fromtimestamp(tsnow).strftime('%Y/%m/%d:%H:%M:%S'), sensorid,random.random() * 2000)
+        
+        self.cursor.execute( query )        
+                 
     @safety_mysql
     def create_test_data(self):
     
@@ -285,9 +321,9 @@ class ResourceDB(object):
             tstamp = tsthen
             while tstamp < tsnow:
                 query = """
-                    INSERT INTO %s.%s (ts,sensorid,watts) VALUES ('%s', %d, %f)
-                 """  % ( self.DB_NAME, self.TBL_TERM_POWER, datetime.datetime.fromtimestamp(tstamp).strftime('%a %b %d %H:%M:%S %Y'), sensorid,random.random() * 2000)
-                print query
+                    INSERT INTO %s.%s (ts,sensorid,watts) VALUES ('%s', %d, %2.f)
+                 """  % ( self.DB_NAME, self.TBL_TERM_POWER, datetime.datetime.fromtimestamp(tstamp).strftime('%Y/%m/%d:%H:%M:%S'), sensorid,random.random() * 2000)
+              
                 self.cursor.execute( query ) 
                 tstamp += (30 * 60)
             

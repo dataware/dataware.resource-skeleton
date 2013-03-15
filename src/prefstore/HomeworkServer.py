@@ -550,6 +550,32 @@ def logout():
     redirect( ROOT_PAGE )
 
 
+@route('/fetch_latest', method="POST")
+def fetch_latest():
+    try:
+        user = check_login()
+        if ( not user ): redirect( ROOT_PAGE )
+    except RegisterException, e:
+        redirect( "/register" )
+    except LoginException, e:
+        return error( e.msg )
+    except Exception, e:
+        return error( e ) 
+
+    table   = request.forms.get('table')
+    columns = request.forms.get('columns')
+    limit   = request.forms.get('limit')
+    key     = request.forms.get('key') 
+    latest  = request.forms.get('latest') 
+    
+    if latest is not None:
+        latest = int(latest)
+        
+    data =  resourcedb.fetch_latest(table, columns, int(limit), key, latest)
+    
+    return json.dumps(data)
+    
+
 @route('/fetch_data', method = "POST")
 def fetch_data():
     try:
@@ -569,15 +595,15 @@ def fetch_data():
     order   = request.forms.get('order') 
     
     data = resourcedb.fetch_data(table, columns, int(limit), orderby, order)
-      
+    
     return json.dumps(data)
     
     
 @route('/createtestdata')
 def createtestdata():
-    data = resourcedb.fetch_data('energy', "ts,sensorid", 100)
-    return json.dumps(data)
-    #resourcedb.create_test_data()
+    #data = resourcedb.fetch_data('energy', "ts,sensorid", 100)
+    #return json.dumps(data)
+    resourcedb.create_test_data()
     return json.dumps({ 
             'success':True,        
     })            
@@ -918,7 +944,11 @@ def summary():
 
     return template( 'summary_page_template', user=user, summary=summary );
     
-    
+def createdata():
+    while True:
+        resourcedb.insert_test_record()
+        gevent.sleep(5);
+        
 def worker():
     while True:
         request = pqueue.get() 
@@ -1056,6 +1086,7 @@ if __name__ == '__main__' :
        
         pqueue = JoinableQueue()
         gevent.spawn(worker)
+        gevent.spawn(createdata)
         pqueue.join()
        
         log.info( "module initialization completed... [SUCCESS]" );
