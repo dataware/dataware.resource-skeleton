@@ -184,7 +184,7 @@ def install_request():
     resource_name = request.GET.get( "resource_name", None )
     
     try: 
-        url = im.initiate_install( user[ "user_id" ], catalog_uri, resource_name, RESOURCES[resource_name]['resource_uri'])
+        url = im.initiate_install( user[ "user_id" ], catalog_uri, resource_name, RESOURCES[resource_name]['resource_uri'], REALM)
         return format_success( url )
     except ParameterException, e:
         return format_failure( "resource", e.msg )
@@ -378,7 +378,7 @@ def invoke_processor():
                     'view_url':view_url
                     })
         
-        print "returning success"
+       
         return json.dumps({"result":"success"})
        
     except Exception, e:

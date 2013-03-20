@@ -99,15 +99,9 @@
 <script>
 
 
- function barchart(name){
+ function barchart(){
  
         var that = {};
-        
-        that.name = name;
-        
-        var fulldata, numericData, labelData, orientation;
-        
-        var width, padding, height;
         
         that.chart;
         
@@ -115,204 +109,182 @@
         
         that.topmargin = ko.observable("margin-top: 0px");
         
+        var format_data  = function(options){
+            
+            var label, value, max, min;
+            
+            if (options.xtype == "numeric"){
+                label = options.y;
+                value = options.x;
+            }else{
+                label = options.x;
+                value = options.y;
+            }
+            
+            max = min = options.data[0][value];
+           
+            values = ko.utils.arrayMap(options.data, function(item){
+                max = Math.max(max, item[value]);
+                min = Math.min(min, item[value]);
+                return {"label": item[label], "value":item[value]};
+            }); 
+            
+            return {'values': values, 'max': max, 'min':min}
+            
+        }
+        
+        var create_scale = function(min, max, orientation, width, height, padding){
+            return  d3.scale.linear()
+                    .domain([min,max])
+                    .range([0, orientation == 1 ? (height-padding) : (width-padding)]);
+        };
+        
+        var bar_width = function(orientation, width, height, padding, length){
+            return orientation == 1 ? (width - (2*padding)) / length 
+                                    : (height-(2*padding)) / length;
+        }
+        
+        var bar_y = function(scale, barWidth, height, padding, orientation){
+            return  function(datum, index){
+                if (orientation == 1)
+                    return height - scale(datum.value);
+                else
+                    return padding + (index * barWidth); 
+            }
+        }
+          
+        var bar_x = function(barWidth, padding, orientation){
+            return function(datum, index){
+                if (orientation == 1)
+                    return padding + (index * barWidth);
+                else
+                    return padding;
+            }
+        }
+        
+        var bar_w = function(scale, barWidth, orientation){
+            return orientation  == 1 ? barWidth : function(d){return scale(d.value)};
+        }
+        
+        var bar_h = function(scale, barWidth, orientation){
+            return orientation == 1 ? function(d){return scale(d.value)} : barWidth;
+        }
+        
+        var set_orientation = function(xtype, ytype){
+            orientation = -1;
+            
+            if (xtype == "numeric"){
+                orientation = 0;
+            }
+            else if (ytype == "numeric"){
+                orientation = 1;
+            }
+            
+            return orientation;
+        }
+        
+        var calculate_params = function(options){
+                    
+            var 
+                orientation = set_orientation(options.xtype, options.ytype),
+                data        = format_data(options),
+                height      = orientation == 1 ? 100 : 300,
+                width       = options.width,
+                padding     = options.padding,
+                scale       = create_scale(data.min, data.max, orientation, width, height, padding),
+                barWidth    = bar_width(orientation, width, height, padding, data.values.length),
+                barY        = bar_y(scale, barWidth, height, padding, orientation),
+                barX        = bar_x(barWidth, padding, orientation),
+                w           = bar_w(scale, barWidth, orientation),
+                h           = bar_h(scale, barWidth, orientation);
+            
+            return{
+                orientation :orientation,
+                data        : data,
+                height      : height,
+                width       : width,
+                padding     : padding,
+                scale       : scale,
+                barWidth    : barWidth,
+                barY        : barY,
+                barX        : barX,
+                w           : w,
+                h           : h,
+            }
+        }
+        
         that.name = function(){
             return name;
         }
         
         that.render = function(options){
-                
+         
             $('.chart').empty();
             
             that.visible(false);
+             
+            params = calculate_params(options);
             
-            var data = [];
+            that.topmargin("margin-top: " + (params.height/2 + 15) + "px");  
             
-            var label, value;
-            
-            if (options.xtype == "numeric"){
-                label = options.y;
-                value = options.x;
-            }else{
-                label = options.x;
-                value = options.y;
-            }
-            
-            
-            var max = min = options.data[0][value];
-           
-            data = ko.utils.arrayMap(options.data, function(item){
-                max = Math.max(max, item[value]);
-                min = Math.min(min, item[value]);
-                return {"label": item[label], "value":item[value]};
-            }); 
-            
-            if (options.xtype == "numeric"){
-                orientation = 0;
+            if (params.orientation >= 0)
                 that.visible(true);
-            }
-            else if (options.ytype == "numeric"){
-                orientation = 1;
-                that.visible(true);
-            }
-            else{
-                that.visible(false);
+            else
                 return;
-            }
-      
-            width   = 280;
-            padding = 8;
-            height = orientation == 1 ? 100 : 300;
-      
-            that.topmargin("margin-top: " + (height/2 + 15) + "px");  
             
             
-            var scale = d3.scale.linear()
-                        .domain([min,max])
-                        .range([0, orientation == 1 ? (height-padding) : (width-padding)]);
-        
-            var barWidth = orientation == 1 ? (width - (2*padding)) / data.length 
-                                            : (height-(2*padding)) / data.length;
-        
-            var barY = function(datum, index){
-                if (orientation == 1)
-                    return height - scale(datum.value);
-                else
-                    return padding + (index * barWidth); 
-            };
-        
-            var barX = function(datum, index){
-                if (orientation == 1)
-                    return padding + (index * barWidth);
-                else
-                    return padding;
-            };
-        
-            var w = orientation  == 1 ? barWidth : function(d){return scale(d.value)};
-            
-            var h = orientation == 1 ? function(d){return scale(d.value)} : barWidth;
-        
             that.chart = d3.select('.chart')
                     .append('svg')
                     .attr({
-                        'width': width,
-                        'height' : height ,
+                        'width': params.width,
+                        'height' : params.height ,
                      })
                     .style('border', '1px solid black')
                     .style('padding', '8px');
                     
              that.chart.selectAll('rect.number')
-                .data(data).enter()
+                .data(params.data.values).enter()
                 .append('rect')
                 .attr({
                     'class':'number',
-                    'x': barX,
-                    'y': barY,
-                    'width' : w,
-                    'height' : h,
+                    'x': params.barX,
+                    'y': params.barY,
+                    'width' : params.w,
+                    'height' : params.h,
                     'fill' : '#dff',
                     'stroke' : '#444',
                 });
-                
-             that.chart.append("line")
-                .attr({
-                    'x1' : 0,
-                    'x2' : width,
-                    'y1' : height - .5,
-                    'y2' : height - .5,
-                    })
-                .style("stroke", '#000');
-
         }
         
-        that.redraw = function(options){
-            console.log("in redraw - chart is " + that.chart);
-            console.log("in redraw - NAME is " + that.name());
+        
+        that.redraw    = function(options){
             
-            var data = [];
+            params = calculate_params(options);
             
-            var label, value;
+            that.topmargin("margin-top: " + (params.height/2 + 15) + "px");  
             
-            if (options.xtype == "numeric"){
-                label = options.y;
-                value = options.x;
-            }else{
-                label = options.x;
-                value = options.y;
-            }
-            
-            var max = min = options.data[0][value];
-           
-            data = ko.utils.arrayMap(options.data, function(item){
-                max = Math.max(max, item[value]);
-                min = Math.min(min, item[value]);
-                return {"label": item[label], "value":item[value]};
-            }); 
-            
-            if (options.xtype == "numeric"){
-                orientation = 0;
+            if (params.orientation >= 0)
                 that.visible(true);
-            }
-            else if (options.ytype == "numeric"){
-                orientation = 1;
-                that.visible(true);
-            }
-            else{
-                that.visible(false);
+            else
                 return;
-            }
-      
-            width   = 280;
-            padding = 8;
-            height = orientation == 1 ? 100 : 300;
-      
-            that.topmargin("margin-top: " + (height/2 + 15) + "px");  
-            
-            
-            var scale = d3.scale.linear()
-                        .domain([min,max])
-                        .range([0, orientation == 1 ? (height-padding) : (width-padding)]);
         
-            var barWidth = orientation == 1 ? (width - (2*padding)) / data.length 
-                                            : (height-(2*padding)) / data.length;
-        
-            var barY = function(datum, index){
-                if (orientation == 1)
-                    return height - scale(datum.value);
-                else
-                    return padding + (index * barWidth); 
-            };
-        
-            var barX = function(datum, index){
-                if (orientation == 1)
-                    return padding + (index * barWidth);
-                else
-                    return padding;
-            };
-        
-            var w = orientation  == 1 ? barWidth : function(d){return scale(d.value)};
-            var h = orientation == 1 ? function(d){return scale(d.value)} : barWidth;
-    
-           
-            console.log(data);
-            
-           
             var rect = that.chart.selectAll("rect.number")
-                .data(data, function(d){return d.label});
+                .data(params.data.values, function(d){return d.label});
              
-            rect.enter().insert('rect', 'line').attr({
+            rect.enter().insert('rect').attr({
                     'class':'number',
-                    'x': barX,
-                    'y': barY,
-                    'width' : w,
-                    'height' : h,
+                    'x': params.barX,
+                    'y': params.barY,
+                    'width' : params.w,
+                    'height' : params.h,
                     'fill' : '#dff',
                     'stroke' : '#444'});
                
             rect.transition()
                 .duration(1000)
                 .attr({
-                    'x': barX,
-                    'y': barY,
+                    'x': params.barX,
+                    'y': params.barY,
                     
                 });
             
@@ -344,7 +316,7 @@
     this.data         = ko.observableArray([]); 
     this.x            = ko.observable();
     this.y            = ko.observable();
-    this.barchart     = ko.observable(barchart("myname"));
+    this.barchart     = ko.observable(barchart());
     
     this.selectAxes   = ko.observable(false);
     this.selectedAxes = ko.observableArray([]);
@@ -569,25 +541,29 @@
     }
 
     this.buildchart = function(){
-        console.log("rendering " + self.barchart().name());
+
         self.barchart().render({
                                 data:self.data(),
                                 x: self.x(),
                                 y: self.y(),
                                 xtype: self.schemaType(self.x()),
-                                ytype: self.schemaType(self.y())
+                                ytype: self.schemaType(self.y()),
+                                width: 280,
+                                padding: 8,
                             });  
     }
     
     
     this.redraw = function(){
-        console.log("redearwing " + self.barchart().name);
+      
         self.barchart().redraw({
                                 data:self.data(),
                                 x: self.x(),
                                 y: self.y(),
                                 xtype: self.schemaType(self.x()),
-                                ytype: self.schemaType(self.y())
+                                ytype: self.schemaType(self.y()),
+                                width: 280,
+                                padding: 8,
                             });  
     }
     

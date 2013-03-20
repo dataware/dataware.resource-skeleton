@@ -192,7 +192,7 @@ class ProcessingModule( object ) :
                     "Invalid access token"
                 )
              
-            #obtain relevent info from the request object    
+            #obtain relevant info from the request object    
             user = request[ "user_id" ]
             query = request[ "query" ]
             processor_id = request["access_token"]
