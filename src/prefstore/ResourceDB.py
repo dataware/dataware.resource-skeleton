@@ -181,11 +181,20 @@ class ResourceDB(object):
         
     #/////////////////////////////////////////////////////////////////////////////////////////////
     @safety_mysql
-    def execute_query(self, query):
-    
-        log.info("exec query: %s" % query)
-        self.cursor.execute( query )
+    def execute_query(self, query, parameters=None):
+        log.info("*********************")
+        log.info("query is %s" % query)
+        log.info("parameters are")
+        log.info(parameters)
+        log.info("**********************")
         
+        if parameters is not None:
+            self.cursor.execute(query, parameters)
+        else:
+            self.cursor.execute( query )
+        
+        log.info(self.cursor._executed)
+            
         row = self.cursor.fetchall()
 
         if not row is None:
@@ -310,6 +319,12 @@ class ResourceDB(object):
     @safety_mysql
     def create_test_data(self):
     
+        urls = ["http://www.google.com", "http://news.bbc.co.uk", "http://www.microsoft.com", "http://news.ycombinator.com", "http://www.yahoo.com", "http://nottingham.ac.uk"]
+        
+        macaddrs = ["3c:07:54:28:20:c2", "3c:07:54:28:20:c8", "3c:07:54:28:20:a2", "3c:07:74:78:20:c2"]
+        
+        ipaddrs  = ["192.168.22.33", "255.255.67.67", "123.34.56.78", "192.176.77.88"]
+        
         random.seed(time.time())
     
         #start a week ago
@@ -326,4 +341,21 @@ class ResourceDB(object):
               
                 self.cursor.execute( query ) 
                 tstamp += (30 * 60)
+        
+        
+        #and urls
+        tsnow         = time.time()
+        tsthen        = time.time() - (7*24*60*60)
+        tstamp = tsthen
+        
+        while tstamp < tsnow:
+            query = """
+                    INSERT INTO %s.%s (ts,macaddr,ipaddr,url) VALUES ('%s', '%s', '%s', '%s')
+                 """  % ( self.DB_NAME, self.TBL_TERM_URLS, datetime.datetime.fromtimestamp(tstamp).strftime('%Y/%m/%d:%H:%M:%S'), macaddrs[random.randint(0, len(macaddrs) - 1)], ipaddrs[random.randint(0, len(ipaddrs) - 1)], urls[random.randint(0, len(urls) - 1)])
+              
+            self.cursor.execute( query ) 
+            tstamp += (30 * 60)
+            
+            
+            
             

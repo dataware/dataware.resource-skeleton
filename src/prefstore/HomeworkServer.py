@@ -943,6 +943,26 @@ def summary():
     summary = None # datadb.fetch_user_summary( user[ "user_id" ] )
 
     return template( 'summary_page_template', user=user, summary=summary );
+
+@route('/testendpoint')
+def testendpoint():
+    return json.dumps({"success":True})
+    
+@route('/unit')
+def unit():
+    #do some unit tests
+    datadb.insert_processor('test_access_token', 'test_client_id', 'urls', 'test_user', 5999999999, "select * from urls WHERE macaddr = %s AND id < %s limit 100")
+    
+    result = pm.invoke_processor_sql('test_access_token', '["3c:07:54:28:20:c2; ---",100]', '/testendpoint')
+    log.info(result)
+    
+    result = pm.invoke_processor_sql('test_access_token', '["3c:07:54:28:20:c2; ---",10]', '/testendpoint')
+    log.info(result)
+    
+    datadb.delete_processor('test_user','test_access_token')
+    
+    return json.dumps({'success':True})
+    
     
 def createdata():
     while True:
@@ -974,6 +994,7 @@ def worker():
             
         finally:
             pqueue.task_done()
+
             
 #//////////////////////////////////////////////////////////
 # MAIN FUNCTION

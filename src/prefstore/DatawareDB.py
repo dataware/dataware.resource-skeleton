@@ -753,8 +753,10 @@ class DataDB(object):
             return False;    
 
             
-    #///////////////////////////////////////
+    #///////////////utility stuff////////////////////////
     
+   
+            
     @safety_mysql                    
     def purgedata( self ):
         try:

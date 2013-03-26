@@ -163,7 +163,7 @@ class ProcessingModule( object ) :
             )     
    
     def invoke_processor_sql(self, processor_token, jsonParams, view_url):
-        
+         
         if processor_token is None :
             
             return self.format_process_failure(
@@ -172,10 +172,9 @@ class ProcessingModule( object ) :
             ) 
 
         try:
-        
-            parameters = json.loads( jsonParams ) if jsonParams else {}
-        
+            parameters = json.loads( jsonParams ) if jsonParams else [ ]
         except:
+            log.error("incorrectly formatted JSON parameters")
             return self.format_process_failure(
                 "access_exception",
                 "incorrectly formatted JSON parameters"
@@ -205,13 +204,18 @@ class ProcessingModule( object ) :
             ) 
 
         try:
+          
             
             if self._check_constraints(resource_name, query):
             
-                execution_time = time.time()
-                result = json.dumps(self.resourcedb.execute_query(query))
-               
+                log.info("constraints satisfied")
                 
+                execution_time = time.time()
+                
+                result = json.dumps(self.resourcedb.execute_query(query, parameters))
+               
+                log.info(result)
+               
                 try:
                   
                     execution_id = self.db.insert_execution(processor_id=processor_id,
@@ -219,7 +223,7 @@ class ProcessingModule( object ) :
                                              result=result, 
                                              executed=execution_time,
                                              view_url=view_url)
-                                    
+                                
                     execution = self.db.fetch_execution_by_id(execution_id)
                                            
                     self.um.trigger({    
@@ -478,6 +482,14 @@ class ProcessingModule( object ) :
     # that a user has shared with the catalog.
     
     def _check_constraints(self, resource_name, query):
+        
+        log.info("query is %s" % query)
+        
+        #first check if there is only 1 statement
+        if len(query.split(";")) > 1:
+            log.error("Failed contraint check - detected more than one query")
+            return False
+        
         myresources = [resource_name]            
         
         tables      = SqlParser.extract_tables(query)  
