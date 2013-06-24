@@ -12,7 +12,7 @@ from dataware.UpdateManager import *
 from dataware.DatawareDB import *            #@UnusedWildImport
 from dataware.ResourceDB import *           #@UnusedWildImport
 import time                         #@Reimport
-import dataware.OpenIDManager
+import dataware.OpenIDManager as OpenIDManager
 import logging.handlers
 import math
 import json
@@ -31,7 +31,7 @@ pid = str(os.getpid())
 print "pid is %s" % pid
 
 log = logging.getLogger( "console_log" )
-TEMPLATE_PATH.insert(0, '/usr/share/pyshared/dataware/views')
+TEMPLATE_PATH.insert(0, '/var/dataware/views')
 data_log = logging.getLogger( "data_log" )
 
 class std_writer( object ):
@@ -330,7 +330,7 @@ def test_query():
 @route( "/static/:filename" )
 def user_get_static_file( filename ):
     
-    return static_file( filename, root='static/' )
+    return static_file( filename, root='/var/dataware/static/' )
 
 
 
@@ -338,7 +338,7 @@ def user_get_static_file( filename ):
 
 def user_get_static_file( path ):
    
-    return static_file( path, root='static/' )
+    return static_file( path, root='/var/dataware/static/' )
 
 
 
