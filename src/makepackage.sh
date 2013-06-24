@@ -12,9 +12,12 @@ cd ..
 sudo cp /home/vagrant/package_files/mysql.sql ./
 sudo dpkg-buildpackage -rfakeroot -uc -us
 cd debian/dataware-resource/
+sudo mkdir -p var/dataware/
 sudo mkdir -p etc/dataware
 sudo mkdir -p var/log/prefstore
 sudo chmod -R 777 var/log/prefstore
+sudo cp -R ../../../../dataware/static ./var/dataware
+sudo cp -R ../../../../dataware/views  ./var/dataware
 sudo cp ../../../../dataware/config_tom.cfg ./etc/dataware/sample_config.cfg
 cd ..
 sudo dpkg --build dataware-resource dataware-resource.deb
