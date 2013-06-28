@@ -16,9 +16,9 @@ sudo mkdir -p var/dataware/
 sudo mkdir -p etc/dataware
 sudo mkdir -p var/log/prefstore
 sudo chmod -R 777 var/log/prefstore
-sudo cp -R ../../../../dataware/static ./var/dataware
-sudo cp -R ../../../../dataware/views  ./var/dataware
-sudo cp ../../../../dataware/config_tom.cfg ./etc/dataware/sample_config.cfg
+sudo mv ../../dataware/static ./var/dataware
+sudo mv ../../dataware/views  ./var/dataware
+sudo mv ../../dataware/config_tom.cfg ./etc/dataware/sample_config.cfg
 cd ..
 sudo dpkg --build dataware-resource dataware-resource.deb
 sudo cp dataware-resource.deb /vagrant
