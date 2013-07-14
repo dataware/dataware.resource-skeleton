@@ -175,7 +175,7 @@ def install_request():
     resource_name = request.GET.get( "resource_name", None )
     
     try: 
-        url = im.initiate_install( user[ "user_id" ], catalog_uri, resource_name, RESOURCES[resource_name]['resource_uri'])
+        url = im.initiate_install( user[ "user_id" ], catalog_uri, resource_name, RESOURCE_URI)
         return format_success( url )
     except ParameterException, e:
         return format_failure( "resource", e.msg )
@@ -669,8 +669,8 @@ def user_register():
                 datadb.commit()
                 
                 #also insert the list of this user's resources (provided in the config file..)
-                for key in RESOURCES:
-                    datadb.insert_resource( user_id, key) 
+                for resource in RESOURCES:
+                    datadb.insert_resource( user_id, resource) 
                 datadb.commit()
                  
             except Exception, e:
